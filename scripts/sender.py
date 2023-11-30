@@ -8,7 +8,7 @@ args = parse_args()
 print_args(args)
 
 # load file
-file = File(args.file)
+file = File(args.file, write=False)
 
 # create server
 server = Server(

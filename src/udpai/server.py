@@ -36,7 +36,7 @@ class Server:
             return None
         return Packet.from_bytes(received_bytes)
     
-    def __delete__(self):
+    def __del__(self):
         self.local_socket.close()
         self.remote_socket.close()
 
