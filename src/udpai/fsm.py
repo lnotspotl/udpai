@@ -72,6 +72,7 @@ class fsm_sender(FSM):
                 self.server.send(packet)
                 self.state = state_sender.WAIT_ACK
             except StopIteration:
+                pass
 
             tprint(self.state, state_sender.WAIT_ACK)
 
@@ -109,6 +110,48 @@ class fsm_reciever(FSM):
             #msg is end msg
                 #exit()
             
-                
 
-            
+from abc import ABC, abstractmethod
+                
+class FSMState:
+    def __init__(self):
+        self.name = self.__class__.__name__
+
+    @abstractmethod
+    def act(self, server, file, packet):
+        pass
+
+    @abstractmethod
+    def next_state(self, server, file, packet):
+        pass
+
+class End2(FSMState):
+    def act(self, server, file, packet):
+        pass
+
+    def next_state(self, server, file, packet):
+        pass
+
+class AckStart(FSMState):
+    def act(self, server, file, packet):
+        return packet
+
+    def next_state(self, server, file, packet):
+        return End2()
+class SendStart(FSMState):
+    def act(self, server, file, packet):
+        return packet
+
+    def next_state(self, server, file, packet):
+        return AckStart()
+        
+if __name__ == "__main__":
+    server = "server"
+    file = "File"
+    packet = None
+    state = SendStart()
+
+    while state.name != "End2":
+        print(state.name)
+        packet = state.act(server, file, packet)
+        state = state.next_state(server, file, packet)
