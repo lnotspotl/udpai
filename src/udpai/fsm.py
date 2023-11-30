@@ -2,35 +2,63 @@ from enum import Enum
 from multiprocessing.connection import wait
 from nis import match
 from unittest import case
+
+from packet import Packet, PacketType
 #packet.type.value
+
+TIMEOUT = 200 # ms
 
 def tprint(state, next_state):
     print("Aktuální stav je: " + state, "Přeházím do stavu: " + next_state)
 
+class FSM:
+    def __init__(self, server, file):
+        self.server = server
+        self.file = file
+
 class state_sender(Enum):
-    START = 0
+    SEND_START = 0
     WAIT_ACK = 1
     SEND_PACKET = 2
-    END = 3
+    SEND_STOP = 3
+    END = 4
 
-class fsm_sender:
-    def __init__(self, state: state_sender):
+class fsm_sender(FSM):
+    def __init__(self, server, file, state: state_sender):
+        super().__init__(server, file)
         self.state = state
+        self.last_state = state
 
     def move_next_state(self, packet):
-        if self.state == state_sender.START:
-            #DO TO: send start msg
+        last_state = self.state
+
+        if self.state == state_sender.SEND_START:
+            self.server.send_start()
             tprint(self.state, state_sender.WAIT_ACK)
             self.state = state_sender.WAIT_ACK
 
         elif self.state == state_sender.WAIT_ACK:
-            next_state = state_sender
+            packet = self.server.receive(TIMEOUT)
 
-            #DO TO: recieved ACK
-            next_state = state_sender.SEND_PACKET
+            if packet is None and self.last_state == state_sender.SEND_START:
+                tprint(self.state, state_sender.SEND_START)
+                self.state = state_sender.SEND_START
 
-            #DO TO: was supposed to recieve START_ACK but did not (time ran out)
-            next_state = state_sender.START
+            if packet is None and self.last_state == state_sender.SEND_PACKET:
+                tprint(self.state, state_sender.SEND_PACKET)
+                self.state = state_sender.SEND_PACKET
+
+            if packet is None and self.last_state == state_sender.SEND_STOP:
+                tprint(self.state, state_sender.SEND_STOP)
+                self.state = state_sender.SEND_STOP
+            
+            if packet is not None and packet.type == PacketType.ACK and self.last_state == state_sender.SEND_PACKET:
+                tprint(self.state, state_sender.SEND_PACKET)
+                self.state = state_sender.SEND_PACKET
+
+            if packet is not None and packet.type == PacketType.ACK and self.last_state == state_sender.SEND_STOP:
+                tprint(self.state, state_sender.END)
+                self.state = state_sender.END
 
             #DO TO: recieve end akc
             next_state = state_sender.END
@@ -39,22 +67,27 @@ class fsm_sender:
             self.state = next_state
 
         elif self.state == state_sender.SEND_PACKET:
-            #DO TO: send start msg
-            self.state = state_sender.WAIT_ACK
+            try:
+                packet = self.file.next()
+                self.server.send(packet)
+                self.state = state_sender.WAIT_ACK
+            except StopIteration:
+
             tprint(self.state, state_sender.WAIT_ACK)
 
         elif self.state == state_sender.END:
             tprint(self.state, "KONEEEEEE")
             exit()
-
+        self.last_state = last_state
 
 class state_reciever(Enum):
     WAIT_START = 0
     SEND_ACK = 1
     WAIT_MSG = 2
 
-class fsm_reciever:
-    def __init__(self, state: state_reciever):
+class fsm_reciever(FSM):
+    def __init__(self, server, file, state: state_reciever):
+        super().__init__(server, file)
         self.state = state
 
     def move_next_state(self, packet):

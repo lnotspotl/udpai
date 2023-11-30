@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import socket
-from . packet import Packet, PacketType
+from .packet import Packet, PacketType
 
 BUFFER_SIZE = 1028 + 256  # 1.25 KB
+
 
 class Server:
     def __init__(
@@ -28,29 +29,44 @@ class Server:
         send_settings = (self.remote_ip, self.remote_port)
         self.remote_socket.sendto(packet.to_bytes(), send_settings)
 
-    def receive(self, timeout=None):
-        self.local_socket.settimeout(timeout)
+    def gen_simple_packet(self, packet_type: PacketType):
+        return Packet(type=packet_type, data_len=0, data=b"")
+
+    def send_start(self):
+        self.send(self.gen_simple_packet(PacketType.START))
+
+    def send_stop(self):
+        self.send(self.gen_simple_packet(PacketType.STOP))
+
+    def send_ack(self):
+        self.send(self.gen_simple_packet(PacketType.ACK))
+
+    def receive(self, timeout_ms=None):
+        self.local_socket.settimeout(
+            timeout_ms / 1000 if timeout_ms is not None else timeout_ms
+        )
         try:
             received_bytes, _ = self.local_socket.recvfrom(BUFFER_SIZE)
         except socket.timeout:
             return None
         return Packet.from_bytes(received_bytes)
-    
+
     def __del__(self):
         self.local_socket.close()
         self.remote_socket.close()
 
+
 if __name__ == "__main__":
     local_ip = "10.0.0.80"
-    local_port = 5005 
+    local_port = 5005
     remote_ip = "10.0.0.80"
     remote_port = 5005
 
     server = Server(
         local_ip=remote_ip,
-        local_port = remote_port,
+        local_port=remote_port,
         remote_ip=local_ip,
-        remote_port=local_port
+        remote_port=local_port,
     )
 
     print("Server is listening...")
