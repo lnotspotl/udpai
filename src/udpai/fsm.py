@@ -3,6 +3,7 @@ from multiprocessing.connection import wait
 from nis import match
 from unittest import case
 
+import server
 from packet import Packet, PacketType
 #packet.type.value
 
@@ -90,8 +91,6 @@ class fsm_reciever(FSM):
     def __init__(self, server, file, state: state_reciever):
         super().__init__(server, file)
         self.state = state
-
-    def move_next_state(self, packet):
         if self.state == state_reciever.WAIT_START:
             #DO TO: wait till start msg is recieved
             tprint(self.state, state_reciever.SEND_ACK)
@@ -112,7 +111,7 @@ class fsm_reciever(FSM):
             
 
 from abc import ABC, abstractmethod
-                
+        
 class FSMState:
     def __init__(self):
         self.name = self.__class__.__name__
@@ -125,33 +124,182 @@ class FSMState:
     def next_state(self, server, file, packet):
         pass
 
-class End2(FSMState):
+###--GLOBAL--#############################################
+#---------------------------------------------------------
+class Exit(FSMState):
     def act(self, server, file, packet):
-        pass
+        pass #exit()  ???
 
     def next_state(self, server, file, packet):
         pass
 
-class AckStart(FSMState):
+###--SENDER--#############################################
+#---------------------------------------------------------
+class AckStart_S(FSMState):
     def act(self, server, file, packet):
+        #Wait StartAck
+        return server.receive(TIMEOUT)
+
+    def next_state(self, server, file, packet):
+        #Start timeout -> SendStart_S
+        if packet is None:
+            return SendStart_S()
+
+        #Start CRC not ok -> SendStart_S
+        if not packet.check_crc():
+            return SendStart_S()
+
+        #Start CRC ok -> SendMsg_S
+        if packet.check_crc():
+            return SendMsg_S()
+
+#---------------------------------------------------------
+class SendStart_S(FSMState):
+    def act(self, server, file, packet):
+        #send start packet
+        return server.send_start()
+
+    def next_state(self, server, file, packet):
+        return AckStart_S()
+
+#---------------------------------------------------------
+class SendMsg_S(FSMState):
+    def act(self, server, file, packet):
+        #TO DO
+        #Try to send msg
+        pass
+
+    def next_state(self, server, file, packet):
+        #TO DO
+        #There is nothing to send -> SendEnd_S
+
+        #Msg sent -> WaitAck_S
+
+        pass
+
+#---------------------------------------------------------
+class WaitAck_S(FSMState):
+    def act(self, server, file, packet):
+        #wait Msg Ack
+        return server.receive(TIMEOUT)
+
+    def next_state(self, server, file, packet):
+        #Timeout -> SendAgain_S
+        if packet is None:
+            return SendAgain_S()
+
+        #Msg CRC not ok -> SendAgain_S
+        if not packet.check_crc():
+            return SendAgain_S()
+
+        #Msg CRC ok -> SendMsg_S
+        if packet.check_crc():
+            return SendMsg_S()
+
+#---------------------------------------------------------
+class SendAgain_S(FSMState):
+    def act(self, server, file, packet):
+        #send the same packet again
+        server.send(packet)
+
+    def next_state(self, server, file, packet):
+        return WaitAck_S()
+
+#---------------------------------------------------------
+class SendEnd_S(FSMState):
+    def act(self, server, file, packet):
+        #send stop packet
+        server.send_stop()
+
+    def next_state(self, server, file, packet):
+        return WaitAckEnd_S()
+
+#---------------------------------------------------------
+class WaitAckEnd_S(FSMState):
+    def act(self, server, file, packet):
+        #wait End Ack
+        return server.receive(TIMEOUT)
+
+    def next_state(self, server, file, packet):
+        #Timeout -> SendEnd_S
+        if packet is None:
+            return SendEnd_S()
+
+        #End CRC not ok -> SendEnd_S
+        if not packet.check_crc():
+            return SendEnd_S()
+
+        #End CRC ok -> SendEnd_S
+        if packet.check_crc():
+            return Exit()
+
+###--RECIEVER--###########################################
+#---------------------------------------------------------
+class WaitStart_R(FSMState):
+    def act(self, server, file, packet):
+        #wait Start msg
+        return server.receive()
+
+    def next_state(self, server, file, packet):
+        #TO DO
+        #Start CRC wrong -> WaitStart_S + send CRC wrong
+
+        #Start CRC ok -> WaitMsg_R
+        if packet.check_crc():
+            return WaitMsg_R
+
+#---------------------------------------------------------
+class WaitMsg_R(FSMState):
+    def act(self, server, file, packet):
+        #wait msg
+        return server.receive()
+
+    def next_state(self, server, file, packet):
+        #Msg CRC not ok -> SendMsgAckCrcWrong
+        if not packet.check_crc():
+            return SendMsgAckCrcWrong_R()
+
+        #End CRC ok -> SendEnd_S
+        if packet.check_crc():
+            return SendMsgAck_R()
+
+#---------------------------------------------------------
+class SendMsgAck_R(FSMState):
+    def act(self, server, file, packet):
+        #send Ack
+        server.send_ack()
         return packet
 
     def next_state(self, server, file, packet):
-        return End2()
-class SendStart(FSMState):
-    def act(self, server, file, packet):
-        return packet
-
-    def next_state(self, server, file, packet):
-        return AckStart()
+        #packet type is DATA -> WaitMsg_R
+        if packet.type.value == PacketType.DATA:
+            return WaitMsg_R()
         
+        #packet type is STOP -> Exit + send ack
+        if packet.type.value == PacketType.STOP:
+            server.send_ack()
+            return Exit()
+
+#---------------------------------------------------------
+class SendMsgAckCrcWrong_R(FSMState):
+    def act(self, server, file, packet):
+        #TO DO:
+        #send ack is wrong
+        pass
+
+    def next_state(self, server, file, packet):
+        return WaitMsg_R()
+
+
+
+
 if __name__ == "__main__":
     server = "server"
     file = "File"
     packet = None
-    state = SendStart()
+    state = SendStart_S()
 
-    while state.name != "End2":
+    while state.name != "Exit":
         print(state.name)
         packet = state.act(server, file, packet)
         state = state.next_state(server, file, packet)
