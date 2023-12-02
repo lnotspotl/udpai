@@ -3,6 +3,7 @@
 from udpai.utils import parse_args, print_args
 from udpai.server import Server
 from udpai.file import File
+from udpai.fsm import SendStart_S
 
 args = parse_args()
 print_args(args)
@@ -19,7 +20,12 @@ server = Server(
 )
 
 # create FSM
+packet = None
+state = SendStart_S()
+info = ""
 
-# fsm.run()
+while state.name != "Exit":
+    packet, info = state.act(server, file, packet)
+    state = state.next_state(server, file, packet, info)
 
 print("Done sender!")

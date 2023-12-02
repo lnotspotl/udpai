@@ -28,6 +28,7 @@ class Server:
     def send(self, packet: Packet):
         send_settings = (self.remote_ip, self.remote_port)
         self.remote_socket.sendto(packet.to_bytes(), send_settings)
+        return packet
 
     def gen_simple_packet(self, packet_type: PacketType, data=b""):
         return Packet(type=packet_type, data_len=0, data=data)
@@ -36,13 +37,13 @@ class Server:
         return self.gen_simple_packet(PacketType.ACK, data=b"OK" if crc_ok else b"NOK")
 
     def send_start(self):
-        self.send(self.gen_simple_packet(PacketType.START))
+        return self.send(self.gen_simple_packet(PacketType.START))
 
     def send_stop(self):
-        self.send(self.gen_simple_packet(PacketType.STOP))
+        return self.send(self.gen_simple_packet(PacketType.STOP))
 
     def send_ack(self, crc_ok: bool):
-        self.send(self.gen_ack_packet(crc_ok))
+        return self.send(self.gen_ack_packet(crc_ok))
 
     def receive(self, timeout_ms=None):
         self.local_socket.settimeout(
