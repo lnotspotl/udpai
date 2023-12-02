@@ -8,14 +8,14 @@ from udpai.fsm import WaitStart_R
 args = parse_args()
 print_args(args)
 
-file = File(args.file, write=False)
+file = File(args.file, write=True)
 
 # create server
 server = Server(
-    local_ip=args.remote_ip,
-    local_port = args.remote_port,
-    remote_ip=args.local_ip,
-    remote_port=args.local_port
+    local_ip=args.local_ip,
+    local_port = args.local_port,
+    remote_ip=args.remote_ip,
+    remote_port=args.remote_port
 )
 
 # create FSM
@@ -24,7 +24,9 @@ state = WaitStart_R()
 info = ""
 
 while state.name != "Exit":
+    print(state.name)
     packet, info = state.act(server, file, packet)
+    print(packet.type)
     state = state.next_state(server, file, packet, info)
 
 print("Done receiver!")
