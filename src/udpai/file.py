@@ -22,7 +22,10 @@ class File:
     def next(self):
         if self.next_ready:
             self.next_ready = False
-            self.last_packet = next(self.iter)
+            try:
+                self.last_packet = next(self.iter)
+            except:
+                self.last_packet = None
         return self.last_packet
     
     def ack(self):
