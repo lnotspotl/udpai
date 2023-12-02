@@ -166,6 +166,7 @@ class WaitStart_R(FSMState):
         packet = server.receive()
         assert packet.type == PacketType.START
         crc_ok = packet.check_crc()
+        print("CRC ok:", crc_ok)
         server.send_ack(crc_ok=crc_ok)
         info = "crc_ok" if crc_ok else "crc_not_ok"
         return packet, info
@@ -202,6 +203,8 @@ class WaitMsg_R(FSMState):
             return WaitMsg_R()
         elif packet.type == PacketType.STOP:
             return Exit()
+        elif packet.type == PacketType.START:
+            return WaitMsg_R()
         
         assert False, "Unknown packet type"
 

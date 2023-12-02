@@ -17,6 +17,7 @@ class Server:
     ):
         socket_settings = [socket.AF_INET, socket.SOCK_DGRAM]  # Internet, UDP
         self.local_socket = socket.socket(*socket_settings)
+        print(f"Binding with {local_ip} on port {local_port}")
         self.local_socket.bind((local_ip, local_port))
         self.local_ip = local_ip
         self.local_port = local_port
@@ -26,6 +27,7 @@ class Server:
         self.remote_port = remote_port
 
     def send(self, packet: Packet):
+        print(f"Sendinc {packet.type} to {self.remote_ip}")
         send_settings = (self.remote_ip, self.remote_port)
         self.remote_socket.sendto(packet.to_bytes(), send_settings)
         return packet
