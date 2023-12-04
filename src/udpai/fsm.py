@@ -1,7 +1,7 @@
 from . import server
 from .packet import PacketType
 
-TIMEOUT = 200  # ms
+TIMEOUT = 1000  # ms
 
 from abc import abstractmethod
 
@@ -76,7 +76,7 @@ class SendMsg_S(FSMState):
             server.send(packet)
             info = "msg"
         else:
-            server.send_stop()
+            packet = server.send_stop()
             info = "eof"
         return packet, info
 
@@ -129,7 +129,7 @@ class SendAgain_S(FSMState):
 class SendEnd_S(FSMState):
     def act(self, server, file, packet):
         info = ""
-        server.send_stop(), info
+        return server.send_stop(), info
 
     def next_state(self, server, file, packet, info):
         return WaitAckEnd_S()
