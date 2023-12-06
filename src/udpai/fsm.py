@@ -153,41 +153,46 @@ class WaitStart_R(FSMState):
 
     def next_state(self, server, file, packet, info):
         if info == "crc_ok":
-            return WaitMsg_R()
+            return FillBuffer_R()
         elif info == "crc_not_ok":
             return WaitStart_R()
     
         assert False, "Unknown info"
 
 # ---------------------------------------------------------
-class WaitMsg_R(FSMState):
+class WaitStart_R(FSMState):
     def act(self, server, file, packet, info):
-
-        packet = server.receive()
-        crc_ok = packet.check()
-        server.send_ack(crc_ok=crc_ok)
-
-        if crc_ok and packet.type == PacketType.DATA:
-            file.write_packet(packet)
-
-        info = "crc_ok" if crc_ok else "crc_not_ok"
-
-        return packet, info
+        return None, None
 
     def next_state(self, server, file, packet, info):
-        if info == "crc_nok":
-            return WaitMsg_R()
-        
-        assert info == "crc_ok", "Unknown info"
+        return FillBuffer_R()
 
-        if packet.type == PacketType.DATA:
-            return WaitMsg_R()
-        elif packet.type == PacketType.STOP:
-            return Exit()
-        elif packet.type == PacketType.START:
-            return WaitMsg_R()
-        
-        assert False, "Unknown packet type"
+# ---------------------------------------------------------
+class FillBuffer_R(FSMState):
+    def act(self, server, file, packet, info):
+        return None, None
+
+    def next_state(self, server, file, packet, info):
+        if packet.type == PacketType.STOP:
+            return AckEnd_R()
+        return Write_R()
+
+# ---------------------------------------------------------
+class Write_R(FSMState):
+    def act(self, server, file, packet, info):
+        return None, None
+
+    def next_state(self, server, file, packet, info):
+        return FillBuffer_R()
+
+# ---------------------------------------------------------
+class AckEnd_R(FSMState):
+    def act(self, server, file, packet, info):
+        return None, None
+
+    def next_state(self, server, file, packet, info):
+        return Exit()
+
 
 if __name__ == "__main__":
     server = "server"
