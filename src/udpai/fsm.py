@@ -6,6 +6,7 @@ from .packet import PacketType
 TIMEOUT = 1000  # ms
 N_PACKETS = 5
 
+
     
 from abc import abstractmethod
 
@@ -27,6 +28,7 @@ class FSMState:
 # ---------------------------------------------------------
 class Exit(FSMState):
     def act(self, server, file, packet, info):
+
         print("Done!, See ya!")
         return None, ""
 
@@ -41,15 +43,21 @@ class SendStart_S(FSMState):
     def act(self, server, file, packet, info):
         # send start packet
         info = {"CRC": '', "packets": array(N_PACKETS)}
-        return server.send_start(), info
 
-    def next_state(self, server, file, packet, info):
-        return AckStart_S()
+    def act(self, server, file, packet,info):
+        # send start packet
+        info = dict()
+        info["crc"] = "ok"
+        info["packets"] = list()
+
+
+        return server.send_start(), info
 
 
 # ---------------------------------------------------------
 class AckStart_S(FSMState):
     def act(self, server, file, packet, info):
+
         # Wait StartAck
         return server.receive(TIMEOUT), info
 
@@ -73,6 +81,7 @@ class AckStart_S(FSMState):
 # ---------------------------------------------------------
 class SendMsg_S(FSMState):
     def act(self, server, file, packet, info):
+
         file.ack()
         packet = file.next()
         if packet is not None:
@@ -94,6 +103,7 @@ class SendMsg_S(FSMState):
 # ---------------------------------------------------------
 class WaitAck_S(FSMState):
     def act(self, server, file, packet, info):
+
         # wait Msg Ack
         info = ""
         return server.receive(TIMEOUT), info
@@ -119,6 +129,7 @@ class WaitAck_S(FSMState):
 # ---------------------------------------------------------
 class SendAgain_S(FSMState):
     def act(self, server, file, packet, info):
+
         # send the same packet again
         info = ""
         packet = file.next()
@@ -131,6 +142,7 @@ class SendAgain_S(FSMState):
 # ---------------------------------------------------------
 class SendEnd_S(FSMState):
     def act(self, server, file, packet, info):
+
         info = ""
         return server.send_stop(), info
 
@@ -141,6 +153,7 @@ class SendEnd_S(FSMState):
 # ---------------------------------------------------------
 class WaitAckEnd_S(FSMState):
     def act(self, server, file, packet, info):
+
         info = ""
         return server.receive(TIMEOUT), info
 
@@ -166,6 +179,7 @@ class WaitAckEnd_S(FSMState):
 # ---------------------------------------------------------
 class WaitStart_R(FSMState):
     def act(self, server, file, packet, info):
+
         packet = server.receive()
         assert packet.type == PacketType.START
         crc_ok = packet.check()
@@ -185,6 +199,7 @@ class WaitStart_R(FSMState):
 # ---------------------------------------------------------
 class WaitMsg_R(FSMState):
     def act(self, server, file, packet, info):
+
         packet = server.receive()
         crc_ok = packet.check()
         server.send_ack(crc_ok=crc_ok)
