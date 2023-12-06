@@ -9,6 +9,7 @@ class File:
         self.write = write
         self.next_ready = True
         self.last_packet = None
+        self.packet_id = 0
 
         if self.write:
             self.file = open(self.file_path, "wb")
@@ -26,6 +27,7 @@ class File:
                 self.last_packet = next(self.iter)
             except:
                 self.last_packet = None
+
         return self.last_packet
     
     def ack(self):
@@ -45,8 +47,10 @@ class File:
         packet = Packet(
             type=PacketType.DATA,
             data_len=len(data),
-            data=data
+            data=data,
+            packet_id=self.packet_id,
         )
+        self.packet_id += 1
         return packet
     
     def __del__(self):
