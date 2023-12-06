@@ -1,5 +1,5 @@
 from .fsm import FSMState, Exit, TIMEOUT
-from .packet import PacketType
+from .packet import PacketType, Packet
 
 
 ###--RECIEVER--###########################################
@@ -25,18 +25,49 @@ class WaitStart_R(FSMState):
 # ---------------------------------------------------------
 class FillBuffer_R(FSMState):
     def act(self, server, file, packet, info):
-        packet = server.receive()        
+        packet = server.receive(TIMEOUT)   
+        buffer = info["buffer"]
+
+        # timeout or crc not ok
+        if packet is None or not packet.check():
+            info["status"] = "timeout"
+            packet = Packet(PacketType.ACK, 0, b"",packet_id=buffer.next_id)
+            server.send(packet)
+            return packet
+        
+
+        if packet.type == PacketType.STOP:
+            info["status"] = "stop"
+            return packet, None
+        
+        assert packet.type == PacketType.DATA
+        info["status"] = "data"
+        buffer.process_packet(packet, file)
+        
         return packet, None
 
     def next_state(self, server, file, packet, info):
-        if packet.type == PacketType.STOP:
+        status = info["status"]
+        if status == "timeout":
+            return FillBuffer_R()
+        
+        if status == "stop":
             return AckEnd_R()
+        
+        assert status == "data"
+
         return Write_R()
 
 
 # ---------------------------------------------------------
 class Write_R(FSMState):
     def act(self, server, file, packet, info):
+        buffer = info["buffer"]
+        next_id = buffer.write_to_file(file)
+
+        packet = Packet(PacketType.ACK, 0, b"", packet_id=next_id)
+        server.send(packet)
+
         return packet, None
 
     def next_state(self, server, file, packet, info):

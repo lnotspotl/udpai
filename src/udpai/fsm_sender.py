@@ -1,6 +1,7 @@
 from .fsm import FSMState, Exit, TIMEOUT
 from .packet import PacketType
 
+
 ###--SENDER--##############################################
 # ---------------------------------------------------------
 class SendStart_S(FSMState):
@@ -34,6 +35,10 @@ class WaitAckStart_S(FSMState):
 # ---------------------------------------------------------
 class FillBuffer_S(FSMState):
     def act(self, server, file, packet, info):
+        buffer = info["buffer"]
+
+        buffer.fill_buffer(file)
+
         #fill buffer slots that are None with next packets up to N_PACKETS
         return packet, info
 
@@ -43,33 +48,52 @@ class FillBuffer_S(FSMState):
 # ---------------------------------------------------------
 class SendBuffer_S(FSMState):
     def act(self, server, file, packet, info):
+        buffer = info["buffer"]
+
+        # buffer is empty, no more data to send
+        if buffer.empty():
+            info["status"] = "empty"
+            return packet, info
+        
+        # buffer is not empty, send buffer
+        info["status"] = "not_empty"
+        buffer.send_buffer(server)
+
         #send buffer slots that have not been sent or resend the one that needs to be
         return packet, info
 
     def next_state(self, server, file, packet, info):
+        status = info["status"]
+
+        if status == "empty":
+            return SendEnd_S()
+
         return WaitAck_S()
 
 # ---------------------------------------------------------
 class WaitAck_S(FSMState):
     def act(self, server, file, packet, info):
-        #wait for ACK
+        packet = server.receive()
+        assert packet.type == PacketType.ACK
+
+        crc_ok = packet.check()
+        if not crc_ok:
+            info["status"] = "crc_not_ok"
+            return packet, info
+        
+        buffer = info["buffer"]
+        buffer.process_ack(packet)
+
         return packet, info
 
     def next_state(self, server, file, packet, info):
-        #recieve ACK -> EmptyBuffer 
-        return EmptyBuffer_S()
 
-        #Timeout -> SendBuffer
+        status = info["status"]
+
+        if status == "crc_not_ok":
+            return WaitAck_S()
+        
         return SendBuffer_S()
-
-# ---------------------------------------------------------
-class EmptyBuffer_S(FSMState):
-    def act(self, server, file, packet, info):
-        return packet, info
-
-    def next_state(self, server, file, packet, info):
-        return SendEnd_S()
-        return FillBuffer_S()
 
 # ---------------------------------------------------------
 class SendEnd_S(FSMState):

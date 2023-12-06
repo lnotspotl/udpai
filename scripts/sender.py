@@ -4,6 +4,7 @@ from udpai.utils import parse_args, print_args
 from udpai.server import Server
 from udpai.file import File
 from udpai.fsm_sender import SendStart_S
+from udpai.fsm_buffer import SenderBuffer
 
 args = parse_args()
 print_args(args)
@@ -22,7 +23,8 @@ server = Server(
 # create FSM
 packet = None
 state = SendStart_S()
-info = ""
+info = dict()
+info["buffer"] = SenderBuffer(capacity=5)
 
 while state.name != "Exit":
     print(state.name)

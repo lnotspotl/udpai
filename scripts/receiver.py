@@ -4,6 +4,7 @@ from udpai.utils import parse_args, print_args
 from udpai.server import Server
 from udpai.file import File
 from udpai.fsm_receiver import WaitStart_R
+from udpai.fsm_buffer import ReceiverBuffer
 
 args = parse_args()
 print_args(args)
@@ -21,11 +22,12 @@ server = Server(
 # create FSM
 packet = None
 state = WaitStart_R()
-info = ""
+info = dict()
+info["buffer"] = ReceiverBuffer(capacity=5)
 
 while state.name != "Exit":
     print(state.name)
-    packet, info = state.act(server, file, packet)
+    packet, info = state.act(server, file, packet, info)
     print(packet.type)
     state = state.next_state(server, file, packet, info)
 
