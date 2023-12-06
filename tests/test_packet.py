@@ -9,8 +9,8 @@ def test_serialize():
     assert packet.crc == packet_reconstructed.crc
     assert packet.data_len == packet_reconstructed.data_len
     assert packet.data == packet_reconstructed.data
-    assert packet.check_crc()
+    assert packet.check()
 
 def test_packet_crc():
     packet = Packet(PacketType.DATA, 0, b'hello world')
-    assert packet.check_crc()
+    assert packet.check()
