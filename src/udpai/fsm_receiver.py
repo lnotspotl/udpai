@@ -22,20 +22,11 @@ class WaitStart_R(FSMState):
 
         assert False, "Unknown info"
 
-
-# ---------------------------------------------------------
-class WaitStart_R(FSMState):
-    def act(self, server, file, packet, info):
-        return None, None
-
-    def next_state(self, server, file, packet, info):
-        return FillBuffer_R()
-
-
 # ---------------------------------------------------------
 class FillBuffer_R(FSMState):
     def act(self, server, file, packet, info):
-        return None, None
+        packet = server.receive()        
+        return packet, None
 
     def next_state(self, server, file, packet, info):
         if packet.type == PacketType.STOP:
@@ -46,7 +37,7 @@ class FillBuffer_R(FSMState):
 # ---------------------------------------------------------
 class Write_R(FSMState):
     def act(self, server, file, packet, info):
-        return None, None
+        return packet, None
 
     def next_state(self, server, file, packet, info):
         return FillBuffer_R()
@@ -55,7 +46,9 @@ class Write_R(FSMState):
 # ---------------------------------------------------------
 class AckEnd_R(FSMState):
     def act(self, server, file, packet, info):
-        return None, None
+        crc_ok = packet.check()
+        packet = server.send_ack(crc_ok)
+        return packet, None
 
     def next_state(self, server, file, packet, info):
         return Exit()
