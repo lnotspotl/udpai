@@ -3,7 +3,7 @@
 from udpai.utils import parse_args, print_args
 from udpai.server import Server
 from udpai.file import File
-from udpai.fsm import WaitStart_R
+from udpai.fsm_receiver import WaitStart_R
 
 args = parse_args()
 print_args(args)

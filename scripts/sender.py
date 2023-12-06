@@ -3,7 +3,7 @@
 from udpai.utils import parse_args, print_args
 from udpai.server import Server
 from udpai.file import File
-from udpai.fsm import SendStart_S
+from udpai.fsm_sender import SendStart_S
 
 args = parse_args()
 print_args(args)
