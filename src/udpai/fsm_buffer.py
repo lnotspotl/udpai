@@ -88,6 +88,7 @@ class ReceiverBuffer(Buffer):
         assert packet.type == PacketType.DATA
 
         idx = self.buffer_idx(packet.packet_id)
+        assert self.buffer[idx] is None
         if self.buffer[idx] is None:
             self.buffer[idx] = packet
 
