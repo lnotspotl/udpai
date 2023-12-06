@@ -11,13 +11,14 @@ class WaitStart_R(FSMState):
         crc_ok = packet.check()
         print("CRC ok:", crc_ok)
         server.send_ack(crc_ok=crc_ok)
-        info = "crc_ok" if crc_ok else "crc_not_ok"
+        info["status"] = "crc_ok" if crc_ok else "crc_not_ok"
         return packet, info
 
     def next_state(self, server, file, packet, info):
-        if info == "crc_ok":
+        status = info["status"]
+        if status == "crc_ok":
             return FillBuffer_R()
-        elif info == "crc_not_ok":
+        elif status == "crc_not_ok":
             return WaitStart_R()
 
         assert False, "Unknown info"
