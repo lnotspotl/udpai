@@ -33,7 +33,7 @@ class Server:
         return packet
 
     def gen_simple_packet(self, packet_type: PacketType, data=b""):
-        return Packet(type=packet_type, data_len=0, data=data)
+        return Packet(type=packet_type, data_len=0, data=data, packet_id=0)
     
     def gen_ack_packet(self, crc_ok: bool):
         return self.gen_simple_packet(PacketType.ACK, data=b"OK" if crc_ok else b"NOK")
@@ -77,5 +77,5 @@ if __name__ == "__main__":
 
     print("Server is listening...")
     while True:
-        dummy_packet = Packet(PacketType.DATA, 0, 0, b"")
+        dummy_packet = Packet(PacketType.DATA, 0, 0, b"", 1)
         server.send(dummy_packet)

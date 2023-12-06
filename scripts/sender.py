@@ -26,7 +26,7 @@ info = ""
 
 while state.name != "Exit":
     print(state.name)
-    packet, info = state.act(server, file, packet)
+    packet, info = state.act(server, file, packet, info)
     print(packet)
     state = state.next_state(server, file, packet, info)
 
