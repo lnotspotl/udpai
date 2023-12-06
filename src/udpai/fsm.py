@@ -36,144 +36,86 @@ class Exit(FSMState):
         pass
 
 
-###--SENDER--#############################################
+###--SENDER--##############################################
 # ---------------------------------------------------------
-
 class SendStart_S(FSMState):
     def act(self, server, file, packet, info):
-        # send start packet
-        info = {"CRC": '', "packets": array(N_PACKETS)}
 
-    def act(self, server, file, packet,info):
-        # send start packet
-        info = dict()
-        info["crc"] = "ok"
-        info["packets"] = list()
-
-
-        return server.send_start(), info
-
-
-# ---------------------------------------------------------
-class AckStart_S(FSMState):
-    def act(self, server, file, packet, info):
-
-        # Wait StartAck
-        return server.receive(TIMEOUT), info
+        return
 
     def next_state(self, server, file, packet, info):
-        # Start timeout -> SendStart_S
-        if packet is None:
-            return SendStart_S()
-        
-        crc_ok = packet.check()
 
-        # Start CRC not ok -> SendStart_S
-        if not crc_ok:
-            return SendStart_S()
-
-        # Start CRC ok -> SendMsg_S
-        if crc_ok:
-            return SendMsg_S()
-        
-        assert False, "Should not get here"
+        return WaitAckStart_S
 
 # ---------------------------------------------------------
-class SendMsg_S(FSMState):
+class WaitAckStart_S(FSMState):
     def act(self, server, file, packet, info):
-
-        file.ack()
-        packet = file.next()
-        if packet is not None:
-            server.send(packet)
-            info = "msg"
-        else:
-            packet = server.send_stop()
-            info = "eof"
-        return packet, info
+        return
 
     def next_state(self, server, file, packet, info):
-        if info == "msg":
-            return WaitAck_S()
-        elif info == "eof":
-            return SendEnd_S()
+
+        return FillBuffer_S
+
+        return SendStart_S
         
-        assert False, "Unknown info"
+# ---------------------------------------------------------
+class FillBuffer_S(FSMState):
+    def act(self, server, file, packet, info):
+        #fill buffer slots that are None with next packets up to N_PACKETS
+        return
+
+    def next_state(self, server, file, packet, info):
+        return SendBuffer_S
+
+# ---------------------------------------------------------
+class SendBuffer_S(FSMState):
+    def act(self, server, file, packet, info):
+        #send buffer slots that have not been sent or resend the one that needs to be
+        return
+
+    def next_state(self, server, file, packet, info):
+        return WaitAck_S
 
 # ---------------------------------------------------------
 class WaitAck_S(FSMState):
     def act(self, server, file, packet, info):
-
-        # wait Msg Ack
-        info = ""
-        return server.receive(TIMEOUT), info
+        #wait for ACK
+        return
 
     def next_state(self, server, file, packet, info):
-        # Timeout -> SendAgain_S
-        if packet is None:
-            return SendAgain_S()
-        
-        crc_ok = packet.check()
+        #recieve ACK -> EmptyBuffer 
+        return EmptyBuffer_S
 
-        # Msg CRC not ok -> SendAgain_S
-        if not crc_ok:
-            return SendAgain_S()
-
-        # Msg CRC ok -> SendMsg_S
-        if crc_ok:
-            return SendMsg_S()
-        
-        assert False, "Should not get here"
-
+        #Timeout -> SendBuffer
+        return SendBuffer_S
 
 # ---------------------------------------------------------
-class SendAgain_S(FSMState):
+class EmptyBuffer_S(FSMState):
     def act(self, server, file, packet, info):
-
-        # send the same packet again
-        info = ""
-        packet = file.next()
-        server.send(packet), info
+        
+        return
 
     def next_state(self, server, file, packet, info):
-        return WaitAck_S()
-
+        return FillBuffer_S
 
 # ---------------------------------------------------------
 class SendEnd_S(FSMState):
     def act(self, server, file, packet, info):
-
-        info = ""
-        return server.send_stop(), info
+        return
 
     def next_state(self, server, file, packet, info):
-        return WaitAckEnd_S()
-
+        
+        return WaitAckEnd_S 
 
 # ---------------------------------------------------------
 class WaitAckEnd_S(FSMState):
     def act(self, server, file, packet, info):
-
-        info = ""
-        return server.receive(TIMEOUT), info
+        return
 
     def next_state(self, server, file, packet, info):
-        # Timeout -> SendEnd_S
-        if packet is None:
-            return SendEnd_S()
+        return Exit
+        return SendEnd_S
         
-        crc_ok = packet.check()
-
-        # End CRC not ok -> SendEnd_S
-        if not crc_ok:
-            return SendEnd_S()
-
-        # End CRC ok -> SendEnd_S
-        if crc_ok:
-            return Exit()
-        
-        assert False, "Should not get here"
-
 
 ###--RECIEVER--###########################################
 # ---------------------------------------------------------
