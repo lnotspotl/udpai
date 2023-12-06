@@ -34,18 +34,18 @@ class FillBuffer_R(FSMState):
             info["status"] = "timeout"
             packet = Packet(PacketType.ACK, 0, b"",packet_id=buffer.next_id)
             server.send(packet)
-            return packet
+            return packet, info
         
 
         if packet.type == PacketType.STOP:
             info["status"] = "stop"
-            return packet, None
+            return packet, info
         
         assert packet.type == PacketType.DATA
         info["status"] = "data"
         buffer.process_packet(packet, file)
         
-        return packet, None
+        return packet, info
 
     def next_state(self, server, file, packet, info):
         status = info["status"]
@@ -69,7 +69,7 @@ class Write_R(FSMState):
         packet = Packet(PacketType.ACK, 0, b"", packet_id=next_id)
         server.send(packet)
 
-        return packet, None
+        return packet, info
 
     def next_state(self, server, file, packet, info):
         return FillBuffer_R()
@@ -80,7 +80,7 @@ class AckEnd_R(FSMState):
     def act(self, server, file, packet, info):
         crc_ok = packet.check()
         packet = server.send_ack(crc_ok)
-        return packet, None
+        return packet, info
 
     def next_state(self, server, file, packet, info):
         return Exit()
