@@ -7,40 +7,6 @@ class Buffer:
         self.capacity = capacity
         self.buffer = [None] * capacity
 
-    def buffer_idx(self, packet_id):
-        return packet_id % self.capacity
-
-class SenderBuffer(Buffer):
-    def __init__(self, capacity):
-        super().__init__(capacity=capacity)
-
-        # Next id that needs to be sent
-        self.next_id = 0
-
-    def fill_buffer(self, file):
-        for i in range(self.capacity):
-            idx = self.buffer_idx(self.next_id + i)
-
-            if self.buffer[idx] is None:
-                file.ack()
-                packet = file.next()
-                if packet is None:
-                    break
-
-                assert packet.packet_id == self.next_id + i
-                
-                self.buffer[idx] = [packet, True]  # packet, needs sending
-
-    def send_buffer(self, server):
-        for i in range(self.capacity):
-            idx = (self.next_id + i) % self.capacity
-
-            if self.buffer[idx] is not None:
-                packet, needs_sending = self.buffer[idx]
-                if needs_sending:
-                    server.send(packet)
-                    self.buffer[idx][1] = False
-
     def size(self):
         return sum([1 if x is not None else 0 for x in self.buffer])
             
@@ -49,64 +15,94 @@ class SenderBuffer(Buffer):
     
     def full(self):
         return self.size() == self.capacity
-    
-    def process_ack(self, packet):
-        if packet is None:
-            idx = self.buffer_idx(self.next_id)
-            if self.buffer[idx] is not None:
-                self.buffer[idx][1] = True
-            return 
 
-        if not packet.check_crc():
-            return 
-        
+class SenderBuffer(Buffer):
+    def __init__(self, capacity, file):
+        super().__init__(capacity=capacity)
+        self.first_id = 0
+
+        self.fill_buffer(file)
+
+        # want to send:
+        # self.first_id, self.first_id + 1, ... , self.first_id + self.capacity - 1
+
+    def fill_buffer(self, file):
+        for i in range(self.capacity):
+            if self.buffer[i] is None:
+                file.ack()
+                packet = file.next()
+                if packet is None:
+                    break
+                self.buffer[i] = [packet, True]  # packet, needs sending
+
+    def process_ack(self, packet, file):
+        assert packet.check()
         assert packet.type == PacketType.ACK
 
-        self.empty_buffer(packet.packet_id)
+        packet_id = packet.packet_id
 
-        assert self.next_id <= packet.packet_id
-        self.next_id = packet.packet_id
+        if packet_id < self.first_id:
+            return 
 
-    def empty_buffer(self, packet_id):
-        t = self.next_id
-        while t != packet_id:
-            idx = self.buffer_idx(t)
-            self.buffer[idx] = None
-            t += 1
+        n_deleted = packet_id - self.first_id
 
-        idx = self.buffer_idx(packet_id)
-        if self.buffer[idx] is not None:
-            self.buffer[idx][1] = True
+        self.buffer = self.buffer[n_deleted:] + [None] * n_deleted
+        self.first_id = packet_id
+        self.fill_buffer(file)
+        self.buffer[0][1] = True
+
+    def send_buffer(self, server):
+        for i in range(self.capacity):
+            if self.buffer[i] is not None:
+                packet, needs_sending = self.buffer[i]
+                if needs_sending:
+                    server.send(packet)
+                    self.buffer[i][1] = False
+
+
 
 class ReceiverBuffer(Buffer):
     def __init__(self, capacity):
         super().__init__(capacity=capacity)
+        self.expected_id = 0
 
-        self.next_id = 0
+    def insert_packet(self, packet):
 
-    def process_packet(self, packet, file):
-        assert packet.type == PacketType.DATA
+        # crc check
+        if not packet.check():
+            return
+        
+        packet_id = packet.packet_id
 
-        idx = self.buffer_idx(packet.packet_id)
-        assert self.buffer[idx] is None
-        if self.buffer[idx] is None:
-            self.buffer[idx] = packet
+        assert packet_id <= self.expected_id + self.capacity
 
-    def write_to_file(self, file):
-        next_id = self.next_id
-        for i in range(self.capacity):
-            idx = self.buffer_idx(next_id)
-            packet = self.buffer[idx]
-            if packet is None:
+        # packet id check
+        if packet_id < self.expected_id:
+            return
+
+        buffer_idx = packet_id - self.expected_id
+
+        if self.buffer[buffer_idx] is None:
+            assert self.buffer[buffer_idx] == packet
+        else:
+            self.buffer[buffer_idx] = packet
+
+    def empty_buffer(self, file):
+        buffer_idx = 0
+        while buffer_idx < self.capacity:
+            if self.buffer[buffer_idx] is None:
                 break
+            
+            packet = self.buffer[buffer_idx]
+            self._write_packet_to_file(packet, file)
+            self._update_buffer()
+            self.expected_id += 1
+            buffer_idx += 1
 
-            if packet.check():
-                break
+        return self.expected_id
+    
+    def _write_packet_to_file(self, packet, file):
+        file.write_packet(packet)
 
-            file.write_packet(packet)
-            self.buffer[idx] = None
-            next_id += 1
-
-        self.next_id = next_id
-
-        return self.next_id
+    def _update_buffer(self):
+        self.buffer = self.buffer[1:] + [None]

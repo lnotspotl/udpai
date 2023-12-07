@@ -26,29 +26,17 @@ class WaitAckStart_S(FSMState):
         if not crc_ok:
             return SendStart_S()
 
-        # Start CRC ok -> FillBuffer_S
+        # Start CRC ok -> send buffer
         if crc_ok:
-            return FillBuffer_S()
+            return SendBuffer_S()
         
         assert False, "Should not get here"
         
 # ---------------------------------------------------------
-class FillBuffer_S(FSMState):
-    def act(self, server, file, packet, info):
-        buffer = info["buffer"]
-
-        buffer.fill_buffer(file)
-
-        #fill buffer slots that are None with next packets up to N_PACKETS
-        return packet, info
-
-    def next_state(self, server, file, packet, info):
-        return SendBuffer_S()
-
-# ---------------------------------------------------------
 class SendBuffer_S(FSMState):
     def act(self, server, file, packet, info):
         buffer = info["buffer"]
+        buffer.fill_buffer()
 
         # buffer is empty, no more data to send
         if buffer.empty():
@@ -80,6 +68,9 @@ class WaitAck_S(FSMState):
         if not crc_ok:
             info["status"] = "crc_not_ok"
             return packet, info
+        
+        # crc ok
+
         
         buffer = info["buffer"]
         buffer.process_ack(packet)

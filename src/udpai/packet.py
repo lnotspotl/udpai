@@ -35,6 +35,14 @@ class Packet:
         if crc is None:
             self.fill_crc()
 
+    def __eq__(self, other):
+        out = self.type == other.type
+        out = out and self.crc == other.crc
+        out = out and self.data_len == other.data_len
+        out = out and self.packet_id == other.packet_id
+        out = out and self.data == other.data
+        return out
+
     def check(self):
         return self.check_crc() and self.check_hash()
 
