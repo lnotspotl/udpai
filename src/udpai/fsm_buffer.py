@@ -49,7 +49,9 @@ class SenderBuffer(Buffer):
         self.buffer = self.buffer[n_deleted:] + [None] * n_deleted
         self.first_id = packet_id
         self.fill_buffer(file)
-        self.buffer[0][1] = True
+
+        if self.buffer[0] is not None:
+            self.buffer[0][1] = True
 
     def send_buffer(self, server):
         for i in range(self.capacity):
