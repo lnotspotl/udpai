@@ -25,6 +25,7 @@ packet = None
 state = SendStart_S()
 info = dict()
 info["buffer"] = SenderBuffer(capacity=BUFFER_SIZE, file=file)
+info["n_timeouts"] = 0
 
 while state.name != "Exit":
     packet, info = state.act(server, file, packet, info)
