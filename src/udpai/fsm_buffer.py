@@ -105,6 +105,7 @@ class ReceiverBuffer(Buffer):
     
     def _write_packet_to_file(self, packet, file):
         file.write_packet(packet)
+        print(packet.packet_id, " <- ID packetu")
 
     def _update_buffer(self):
         self.buffer = self.buffer[1:] + [None]
