@@ -15,6 +15,14 @@ class Buffer:
     
     def full(self):
         return self.size() == self.capacity
+    
+    def __str__(self):
+        out = "Buffer: "
+        for i in range(self.capacity):
+            out += "N " if self.buffer[i] is None else (str(self.buffer[i].packet_id) + " ")
+        out += " )"
+        return out
+
 
 class SenderBuffer(Buffer):
     def __init__(self, capacity, file):
@@ -87,21 +95,26 @@ class ReceiverBuffer(Buffer):
         if self.buffer[buffer_idx] is not None:
             assert self.buffer[buffer_idx] == packet
         else:
-            print(f"Inserting packet with id {packet.packet_id}")
+            print(f"Inserting packet with id {packet.packet_id} on index {buffer_idx}")
             self.buffer[buffer_idx] = packet
+            print(self)
 
     def empty_buffer(self, file):
         buffer_idx = 0
         while buffer_idx < self.capacity:
-            if self.buffer[buffer_idx] is None:
+            if self.buffer[0] is None:
                 break
             
-            packet = self.buffer[buffer_idx]
+            packet = self.buffer[0]
+
+            print(f"writing packet with id {packet.packet_id}, buffer_idx: {buffer_idx}")
+            print(self)
             self._write_packet_to_file(packet, file)
             self._update_buffer()
             self.expected_id += 1
             buffer_idx += 1
-
+            print(self)
+            print("")
         return self.expected_id
     
     def _write_packet_to_file(self, packet, file):
