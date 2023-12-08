@@ -19,6 +19,7 @@ class PacketType(Enum):
     STOP = 1
     DATA = 2
     ACK = 3
+    UNKNOWN = 4
 
 class Packet:
     def __init__(self, type: PacketType, data_len: int, data: bytes, packet_id: int, crc=None, hash=None):
@@ -76,6 +77,10 @@ class Packet:
     @classmethod
     def from_bytes(cls, packet_bytes):
         type = cls._type_from_bytes(packet_bytes)
+
+        if type >= PacketType.UNKNOWN:
+            type = PacketType.UNKNOWN.value
+
         crc = cls._crc_from_bytes(packet_bytes)
         data_len = cls._data_len_from_bytes(packet_bytes)
         data = cls._data_from_bytes(packet_bytes)
