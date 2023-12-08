@@ -84,7 +84,7 @@ class ReceiverBuffer(Buffer):
 
         buffer_idx = packet_id - self.expected_id
 
-        if self.buffer[buffer_idx] is None:
+        if self.buffer[buffer_idx] is not None:
             assert self.buffer[buffer_idx] == packet
         else:
             self.buffer[buffer_idx] = packet

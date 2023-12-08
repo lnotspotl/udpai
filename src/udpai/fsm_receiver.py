@@ -33,7 +33,7 @@ class FillBuffer_R(FSMState):
         # timeout 
         if packet is None:
             info["status"] = "timeout"
-            next_id = info["buffer"].next_id
+            next_id = info["buffer"].expected_id
             ack_packet = Packet(PacketType.ACK, 0, b"", packet_id=next_id)
             server.send(ack_packet)
             return packet, info
