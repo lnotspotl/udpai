@@ -2,7 +2,7 @@
 
 from .packet import Packet, PacketType
 
-BUFFER_SIZE = 1
+BUFFER_SIZE = 5
 
 class Buffer:
     def __init__(self, capacity):
@@ -82,6 +82,10 @@ class ReceiverBuffer(Buffer):
 
         # crc check
         if not packet.check():
+            print("Packet ", packet.packet_id, " was wrong")
+            return
+        
+        if packet.type != PacketType.DATA:
             return
         
         packet_id = packet.packet_id
@@ -115,6 +119,7 @@ class ReceiverBuffer(Buffer):
     
     def _write_packet_to_file(self, packet, file):
         file.write_packet(packet)
+        print("Packet with id", packet.packet_id, "is correct --> Writing")
 
     def _update_buffer(self):
         self.buffer = self.buffer[1:] + [None]

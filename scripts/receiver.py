@@ -19,6 +19,10 @@ server = Server(
     remote_port=args.remote_port
 )
 
+def print_state(state):
+    if state != "FillBuffer_R" and state != "EmptyBuffer_R":
+        print(state) 
+
 # create FSM
 packet = None
 state = WaitStart_R()
@@ -28,6 +32,7 @@ time_start = time.time()
 
 while state.name != "Exit":
     packet, info = state.act(server, file, packet, info)
+    print_state(state.__class__.__name__)
     state = state.next_state(server, file, packet, info)
 
 print("Done receiver!")
