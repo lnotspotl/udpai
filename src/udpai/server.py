@@ -27,7 +27,6 @@ class Server:
         self.remote_port = remote_port
 
     def send(self, packet: Packet):
-        print(f"Sendinc {packet.type} to {self.remote_ip}")
         send_settings = (self.remote_ip, self.remote_port)
         self.remote_socket.sendto(packet.to_bytes(), send_settings)
         return packet

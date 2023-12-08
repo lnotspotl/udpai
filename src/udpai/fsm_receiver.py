@@ -11,7 +11,6 @@ class WaitStart_R(FSMState):
         packet = server.receive()
         assert packet.type == PacketType.START
         crc_ok = packet.check()
-        print("CRC ok:", crc_ok)
         server.send_ack(crc_ok=crc_ok)
         info["status"] = "crc_ok" if crc_ok else "crc_not_ok"
         return packet, info

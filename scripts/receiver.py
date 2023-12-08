@@ -26,9 +26,7 @@ info = dict()
 info["buffer"] = ReceiverBuffer(capacity=5)
 
 while state.name != "Exit":
-    print(state.name)
     packet, info = state.act(server, file, packet, info)
-    #print(packet.type)
     state = state.next_state(server, file, packet, info)
 
 print("Done receiver!")

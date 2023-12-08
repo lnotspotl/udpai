@@ -87,6 +87,7 @@ class ReceiverBuffer(Buffer):
         if self.buffer[buffer_idx] is not None:
             assert self.buffer[buffer_idx] == packet
         else:
+            print(f"Inserting packet with id {packet.packet_id}")
             self.buffer[buffer_idx] = packet
 
     def empty_buffer(self, file):
@@ -105,7 +106,7 @@ class ReceiverBuffer(Buffer):
     
     def _write_packet_to_file(self, packet, file):
         file.write_packet(packet)
-        print(packet.packet_id, " <- ID packetu")
+        print(f"Writing packet with id {packet.packet_id}")
 
     def _update_buffer(self):
         self.buffer = self.buffer[1:] + [None]
