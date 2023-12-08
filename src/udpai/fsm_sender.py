@@ -70,10 +70,9 @@ class WaitAck_S(FSMState):
             return packet, info
         
         # crc ok
-
         
         buffer = info["buffer"]
-        buffer.process_ack(packet)
+        buffer.process_ack(packet, file)
 
         return packet, info
 
