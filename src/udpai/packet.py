@@ -77,10 +77,6 @@ class Packet:
     @classmethod
     def from_bytes(cls, packet_bytes):
         type = cls._type_from_bytes(packet_bytes)
-
-        if type >= PacketType.UNKNOWN:
-            type = PacketType.UNKNOWN.value
-
         crc = cls._crc_from_bytes(packet_bytes)
         data_len = cls._data_len_from_bytes(packet_bytes)
         data = cls._data_from_bytes(packet_bytes)
@@ -117,6 +113,10 @@ class Packet:
     def _type_from_bytes(packet_bytes):
         start, stop = 0, PACKET_TYPE_SIZE
         type = int.from_bytes(packet_bytes[start:stop], byteorder=ENDIAN)
+
+        if type >= PacketType.UNKNOWN.value:
+            type = PacketType.UNKNOWN.value
+
         return PacketType(type)
 
     @staticmethod
