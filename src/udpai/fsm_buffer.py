@@ -2,7 +2,7 @@
 
 from .packet import Packet, PacketType
 
-BUFFER_SIZE = 20
+BUFFER_SIZE = 1
 
 class Buffer:
     def __init__(self, capacity):

@@ -2,8 +2,6 @@ from . import server
 from .packet import PacketType
 
 TIMEOUT = 1000  # ms
-N_PACKETS = 5
-
 from abc import abstractmethod
 
 

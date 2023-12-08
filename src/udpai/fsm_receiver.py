@@ -27,7 +27,8 @@ class WaitStart_R(FSMState):
 # ---------------------------------------------------------
 class FillBuffer_R(FSMState):
     def act(self, server, file, packet, info):
-        packet = server.receive(RECEIVE_TIMEOUT)   
+        packet = server.receive(RECEIVE_TIMEOUT)
+        print("Packed recieved, packet type is:", packet.type, " with ID: ", packet.packet_id) 
 
         # timeout 
         if packet is None:
@@ -66,6 +67,7 @@ class EmptyBuffer_R(FSMState):
         next_id = buffer.empty_buffer(file)
         packet = Packet(PacketType.ACK, 0, b"", packet_id=next_id)
         packet = server.send(packet)
+        print("Packet sent with id: ", packet.packet_id)
         return packet, info
     
     def next_state(self, server, file, packet, info):
