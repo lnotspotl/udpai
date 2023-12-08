@@ -24,7 +24,7 @@ server = Server(
 packet = None
 state = SendStart_S()
 info = dict()
-info["buffer"] = SenderBuffer(capacity=5)
+info["buffer"] = SenderBuffer(capacity=5, file=file)
 
 while state.name != "Exit":
     print(state.name)
