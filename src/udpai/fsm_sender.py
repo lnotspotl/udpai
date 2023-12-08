@@ -36,7 +36,7 @@ class WaitAckStart_S(FSMState):
 class SendBuffer_S(FSMState):
     def act(self, server, file, packet, info):
         buffer = info["buffer"]
-        buffer.fill_buffer()
+        buffer.fill_buffer(file)
 
         # buffer is empty, no more data to send
         if buffer.empty():
