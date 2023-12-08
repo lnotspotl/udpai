@@ -64,7 +64,7 @@ class FillBuffer_R(FSMState):
 class EmptyBuffer_R(FSMState):
     def act(self, server, file, packet, info):
         buffer = info["buffer"]
-        next_id = buffer.empty_buffer()
+        next_id = buffer.empty_buffer(file)
         packet = Packet(PacketType.ACK, 0, b"", packet_id=next_id)
         packet = server.send(packet)
         return packet, info
