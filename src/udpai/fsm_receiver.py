@@ -1,7 +1,7 @@
 from .fsm import FSMState, Exit, TIMEOUT
 from .packet import PacketType, Packet
 
-RECEIVE_TIMEOUT = 1 # ms
+RECEIVE_TIMEOUT = 10 # ms
 
 
 ###--RECIEVER--###########################################
