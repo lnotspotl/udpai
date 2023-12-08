@@ -38,7 +38,7 @@ class FillBuffer_R(FSMState):
             server.send(ack_packet)
             return packet, info
         
-        if packet.type == PacketType.STOP and packet.check():
+        if packet.check() and packet.type == PacketType.STOP:
             info["status"] = "stop"
             return packet, info
         
