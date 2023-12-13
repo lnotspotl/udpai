@@ -29,6 +29,7 @@ info["n_timeouts"] = 0
 
 while state.name != "Exit":
     packet, info = state.act(server, file, packet, info)
+    print(state)
     state = state.next_state(server, file, packet, info)
 
 print("Done sender!")
